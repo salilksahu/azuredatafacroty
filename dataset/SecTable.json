@@ -1,0 +1,38 @@
+{
+	"name": "SecTable",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureNSEDB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "symbol",
+				"type": "varchar"
+			},
+			{
+				"name": "series",
+				"type": "varchar"
+			},
+			{
+				"name": "security_name",
+				"type": "varchar"
+			},
+			{
+				"name": "Band",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Remarks",
+				"type": "varchar"
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "securities"
+		}
+	}
+}
