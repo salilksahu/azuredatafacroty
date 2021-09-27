@@ -1,0 +1,9 @@
+{
+	"name": "salildatafactory",
+	"location": "centralindia",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "0bf25cdb-ee11-408e-9b72-046404ae5439",
+		"tenantId": "25935d13-2cc7-4def-ab3d-36bc1d605f83"
+	}
+}
