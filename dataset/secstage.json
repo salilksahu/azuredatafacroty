@@ -1,0 +1,49 @@
+{
+	"name": "secstage",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "AzureNSEDB",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "AzureSqlTable",
+		"schema": [
+			{
+				"name": "id",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "symbol",
+				"type": "varchar"
+			},
+			{
+				"name": "series",
+				"type": "varchar"
+			},
+			{
+				"name": "security_name",
+				"type": "varchar"
+			},
+			{
+				"name": "Band",
+				"type": "int",
+				"precision": 10
+			},
+			{
+				"name": "Remarks",
+				"type": "varchar"
+			},
+			{
+				"name": "update_time",
+				"type": "datetime",
+				"precision": 23,
+				"scale": 3
+			}
+		],
+		"typeProperties": {
+			"schema": "dbo",
+			"table": "securities_stage"
+		}
+	}
+}
