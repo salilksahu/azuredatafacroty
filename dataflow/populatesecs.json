@@ -6,7 +6,7 @@
 			"sources": [
 				{
 					"dataset": {
-						"referenceName": "secstage",
+						"referenceName": "SecTable",
 						"type": "DatasetReference"
 					},
 					"name": "secdata"
@@ -18,7 +18,7 @@
 					"name": "LookupSecs"
 				}
 			],
-			"script": "source(output(\n\t\tid as integer,\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string,\n\t\tupdate_time as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> secdata\nsecdata lookup(ERROR_FUNCTION('') == ERROR_FUNCTION(''),\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupSecs"
+			"script": "source(output(\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> secdata\nsecdata lookup(ERROR_FUNCTION('') == ERROR_FUNCTION(''),\n\tmultiple: false,\n\tpickup: 'any',\n\tbroadcast: 'auto')~> LookupSecs"
 		}
 	}
 }
