@@ -1,0 +1,20 @@
+{
+	"name": "populatesecs",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "secstage",
+						"type": "DatasetReference"
+					},
+					"name": "secdata"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"script": "source(output(\n\t\tid as integer,\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string,\n\t\tupdate_time as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> secdata"
+		}
+	}
+}
