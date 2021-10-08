@@ -16,7 +16,7 @@
 		],
 		"type": "BlobEventsTrigger",
 		"typeProperties": {
-			"blobPathBeginsWith": "/input/blobs/",
+			"blobPathBeginsWith": "/input/blobs/'sec'",
 			"ignoreEmptyBlobs": true,
 			"scope": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles",
 			"events": [
