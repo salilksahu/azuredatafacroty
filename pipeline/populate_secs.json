@@ -106,7 +106,10 @@
 						"referenceName": "seclist",
 						"type": "DatasetReference",
 						"parameters": {
-							"secfilename": "sec_list.csv"
+							"secfilename": {
+								"value": "@pipeline().parameters.secfilename",
+								"type": "Expression"
+							}
 						}
 					}
 				],
@@ -205,7 +208,10 @@
 						"referenceName": "seclist",
 						"type": "DatasetReference",
 						"parameters": {
-							"secfilename": "sec_list.csv"
+							"secfilename": {
+								"value": "@pipeline().parameters.secfilename",
+								"type": "Expression"
+							}
 						}
 					}
 				],
@@ -240,8 +246,18 @@
 						"referenceName": "seclist",
 						"type": "DatasetReference",
 						"parameters": {
-							"secfilename": "sec_list.csv"
+							"secfilename": {
+								"value": "@pipeline().parameters.secfilename",
+								"type": "Expression"
+							}
 						}
+					},
+					"logStorageSettings": {
+						"linkedServiceName": {
+							"referenceName": "nsestorage",
+							"type": "LinkedServiceReference"
+						},
+						"path": "input"
 					},
 					"enableLogging": true,
 					"storeSettings": {
@@ -252,6 +268,11 @@
 				}
 			}
 		],
+		"parameters": {
+			"secfilename": {
+				"type": "string"
+			}
+		},
 		"annotations": []
 	}
 }
