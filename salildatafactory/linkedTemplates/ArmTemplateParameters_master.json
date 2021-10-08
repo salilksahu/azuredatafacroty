@@ -11,6 +11,12 @@
 		"nsestorage_connectionString": {
 			"value": ""
 		},
+		"new_sec_file_added_properties_populate_secs_parameters_secfilename": {
+			"value": "@triggerBody().fileName"
+		},
+		"new_sec_file_added_properties_typeProperties_scope": {
+			"value": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles"
+		},
 		"containerUri": {
 			"value": ""
 		},

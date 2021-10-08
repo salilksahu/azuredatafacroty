@@ -15,6 +15,14 @@
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'nsestorage'"
 		},
+		"new_sec_file_added_properties_populate_secs_parameters_secfilename": {
+			"type": "string",
+			"defaultValue": "@triggerBody().fileName"
+		},
+		"new_sec_file_added_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles"
+		},
 		"containerUri": {
 			"type": "string",
 			"metadata": "URI to storage account containing linked ARM templates"
@@ -47,6 +55,12 @@
 					},
 					"nsestorage_connectionString": {
 						"value": "[parameters('nsestorage_connectionString')]"
+					},
+					"new_sec_file_added_properties_populate_secs_parameters_secfilename": {
+						"value": "[parameters('new_sec_file_added_properties_populate_secs_parameters_secfilename')]"
+					},
+					"new_sec_file_added_properties_typeProperties_scope": {
+						"value": "[parameters('new_sec_file_added_properties_typeProperties_scope')]"
 					}
 				}
 			},

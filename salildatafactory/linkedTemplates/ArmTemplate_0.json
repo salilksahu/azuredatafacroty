@@ -14,6 +14,14 @@
 		"nsestorage_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'nsestorage'"
+		},
+		"new_sec_file_added_properties_populate_secs_parameters_secfilename": {
+			"type": "string",
+			"defaultValue": "@triggerBody().fileName"
+		},
+		"new_sec_file_added_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles"
 		}
 	},
 	"variables": {
@@ -47,6 +55,49 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/SecTable')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "AzureNSEDB",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "AzureSqlTable",
+				"schema": [
+					{
+						"name": "symbol",
+						"type": "varchar"
+					},
+					{
+						"name": "series",
+						"type": "varchar"
+					},
+					{
+						"name": "security_name",
+						"type": "varchar"
+					},
+					{
+						"name": "Band",
+						"type": "int",
+						"precision": 10
+					},
+					{
+						"name": "Remarks",
+						"type": "varchar"
+					}
+				],
+				"typeProperties": {
+					"schema": "dbo",
+					"table": "securities"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/AzureNSEDB')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/seclist')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -55,12 +106,20 @@
 					"referenceName": "nsestorage",
 					"type": "LinkedServiceReference"
 				},
+				"parameters": {
+					"secfilename": {
+						"type": "string"
+					}
+				},
 				"annotations": [],
 				"type": "DelimitedText",
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobStorageLocation",
-						"fileName": "nse sec_list.csv",
+						"fileName": {
+							"value": "@dataset().secfilename",
+							"type": "Expression"
+						},
 						"container": "input"
 					},
 					"columnDelimiter": ",",
@@ -150,13 +209,94 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/secoutfile')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "nsestorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"fileName": {
+							"value": "@concat('sec_out',utcnow(),'.csv')",
+							"type": "Expression"
+						},
+						"container": "output"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/nsestorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/populatesecs')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "secstage",
+								"type": "DatasetReference"
+							},
+							"name": "secdata"
+						},
+						{
+							"dataset": {
+								"referenceName": "SecTable",
+								"type": "DatasetReference"
+							},
+							"name": "dbsecdata"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "SecTable",
+								"type": "DatasetReference"
+							},
+							"name": "secmain"
+						}
+					],
+					"transformations": [
+						{
+							"name": "secseriesmacth"
+						},
+						{
+							"name": "splitsecs"
+						},
+						{
+							"name": "macthingsecs"
+						}
+					],
+					"script": "source(output(\n\t\tid as integer,\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string,\n\t\tupdate_time as timestamp\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_UNCOMMITTED',\n\tformat: 'table') ~> secdata\nsource(output(\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string\n\t),\n\tallowSchemaDrift: true,\n\tvalidateSchema: false,\n\tisolationLevel: 'READ_COMMITTED',\n\tformat: 'table') ~> dbsecdata\nsecdata, dbsecdata lookup(secdata@symbol == dbsecdata@symbol\n\t&& secdata@series == dbsecdata@series,\n\tmultiple: true,\n\tbroadcast: 'both')~> secseriesmacth\nmacthingsecs split(matchvalue,\n\tdisjoint: false) ~> splitsecs@(ignoreinserted, insertabsent)\nsecseriesmacth derive(matchvalue = isMatch()) ~> macthingsecs\nsplitsecs@insertabsent sink(allowSchemaDrift: true,\n\tvalidateSchema: false,\n\tinput(\n\t\tsymbol as string,\n\t\tseries as string,\n\t\tsecurity_name as string,\n\t\tBand as integer,\n\t\tRemarks as string\n\t),\n\tdeletable:false,\n\tinsertable:true,\n\tupdateable:false,\n\tupsertable:false,\n\tformat: 'table',\n\tskipDuplicateMapInputs: true,\n\tskipDuplicateMapOutputs: true,\n\terrorHandlingOption: 'stopOnFirstError',\n\tmapColumn(\n\t\tsymbol = splitsecs@insertabsent@symbol,\n\t\tseries = splitsecs@insertabsent@series,\n\t\tsecurity_name = splitsecs@insertabsent@security_name,\n\t\tBand = splitsecs@insertabsent@Band,\n\t\tRemarks = splitsecs@insertabsent@Remarks\n\t)) ~> secmain"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/secstage')]",
+				"[concat(variables('factoryId'), '/datasets/SecTable')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/populate_secs')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"activities": [
 					{
-						"name": "copy to stage",
+						"name": "load_sec_data_stage",
 						"type": "Copy",
 						"dependsOn": [],
 						"policy": {
@@ -230,8 +370,8 @@
 										},
 										"sink": {
 											"name": "Band",
-											"type": "Int32",
-											"physicalType": "int"
+											"type": "String",
+											"physicalType": "varchar"
 										}
 									},
 									{
@@ -258,7 +398,12 @@
 							{
 								"referenceName": "seclist",
 								"type": "DatasetReference",
-								"parameters": {}
+								"parameters": {
+									"secfilename": {
+										"value": "@pipeline().parameters.secfilename",
+										"type": "Expression"
+									}
+								}
 							}
 						],
 						"outputs": [
@@ -268,17 +413,212 @@
 								"parameters": {}
 							}
 						]
+					},
+					{
+						"name": "load_sec_to_main",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "load_sec_data_stage",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "1.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "populatesecs",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"secdata": {},
+									"dbsecdata": {},
+									"secmain": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "move_sec_file",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "load_sec_to_main",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobStorageReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"sink": {
+								"type": "DelimitedTextSink",
+								"storeSettings": {
+									"type": "AzureBlobStorageWriteSettings"
+								},
+								"formatSettings": {
+									"type": "DelimitedTextWriteSettings",
+									"quoteAllText": true,
+									"fileExtension": ".txt"
+								}
+							},
+							"enableStaging": false,
+							"translator": {
+								"type": "TabularTranslator",
+								"typeConversion": true,
+								"typeConversionSettings": {
+									"allowDataTruncation": true,
+									"treatBooleanAsNumber": false
+								}
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "seclist",
+								"type": "DatasetReference",
+								"parameters": {
+									"secfilename": {
+										"value": "@pipeline().parameters.secfilename",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "secoutfile",
+								"type": "DatasetReference",
+								"parameters": {}
+							}
+						]
+					},
+					{
+						"name": "delete_sec_list",
+						"type": "Delete",
+						"dependsOn": [
+							{
+								"activity": "move_sec_file",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "7.00:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "seclist",
+								"type": "DatasetReference",
+								"parameters": {
+									"secfilename": {
+										"value": "@pipeline().parameters.secfilename",
+										"type": "Expression"
+									}
+								}
+							},
+							"logStorageSettings": {
+								"linkedServiceName": {
+									"referenceName": "nsestorage",
+									"type": "LinkedServiceReference"
+								},
+								"path": "input"
+							},
+							"enableLogging": true,
+							"storeSettings": {
+								"type": "AzureBlobStorageReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							}
+						}
 					}
 				],
 				"policy": {
 					"elapsedTimeMetric": {},
 					"cancelAfter": {}
 				},
+				"parameters": {
+					"secfilename": {
+						"type": "string"
+					}
+				},
 				"annotations": []
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/seclist')]",
-				"[concat(variables('factoryId'), '/datasets/secstage')]"
+				"[concat(variables('factoryId'), '/datasets/secstage')]",
+				"[concat(variables('factoryId'), '/dataflows/populatesecs')]",
+				"[concat(variables('factoryId'), '/datasets/secoutfile')]",
+				"[concat(variables('factoryId'), '/linkedServices/nsestorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/new_sec_file_added')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "populate_secs",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"secfilename": "[parameters('new_sec_file_added_properties_populate_secs_parameters_secfilename')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/input/blobs/'sec'",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('new_sec_file_added_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/populate_secs')]"
 			]
 		}
 	]

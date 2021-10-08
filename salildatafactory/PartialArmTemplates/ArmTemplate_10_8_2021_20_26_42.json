@@ -6,22 +6,6 @@
 			"type": "string",
 			"metadata": "Data Factory name",
 			"defaultValue": "salildatafactory"
-		},
-		"AzureNSEDB_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'AzureNSEDB'"
-		},
-		"nsestorage_connectionString": {
-			"type": "secureString",
-			"metadata": "Secure string for 'connectionString' of 'nsestorage'"
-		},
-		"new_sec_file_added_properties_populate_secs_parameters_secfilename": {
-			"type": "string",
-			"defaultValue": "@triggerBody().fileName"
-		},
-		"new_sec_file_added_properties_typeProperties_scope": {
-			"type": "string",
-			"defaultValue": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles"
 		}
 	},
 	"variables": {
@@ -148,8 +132,7 @@
 						"outputs": [
 							{
 								"referenceName": "secstage",
-								"type": "DatasetReference",
-								"parameters": {}
+								"type": "DatasetReference"
 							}
 						]
 					},
@@ -175,15 +158,8 @@
 						"typeProperties": {
 							"dataflow": {
 								"referenceName": "populatesecs",
-								"type": "DataFlowReference",
-								"parameters": {},
-								"datasetParameters": {
-									"secdata": {},
-									"dbsecdata": {},
-									"secmain": {}
-								}
+								"type": "DataFlowReference"
 							},
-							"staging": {},
 							"compute": {
 								"coreCount": 8,
 								"computeType": "General"
@@ -258,8 +234,7 @@
 						"outputs": [
 							{
 								"referenceName": "secoutfile",
-								"type": "DatasetReference",
-								"parameters": {}
+								"type": "DatasetReference"
 							}
 						]
 					},
@@ -309,10 +284,6 @@
 						}
 					}
 				],
-				"policy": {
-					"elapsedTimeMetric": {},
-					"cancelAfter": {}
-				},
 				"parameters": {
 					"secfilename": {
 						"type": "string"
@@ -322,10 +293,8 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/datasets/seclist')]",
-				"[concat(variables('factoryId'), '/datasets/secstage')]",
 				"[concat(variables('factoryId'), '/dataflows/populatesecs')]",
-				"[concat(variables('factoryId'), '/datasets/secoutfile')]",
-				"[concat(variables('factoryId'), '/linkedServices/nsestorage')]"
+				"[concat(variables('factoryId'), '/datasets/secoutfile')]"
 			]
 		},
 		{
@@ -367,9 +336,7 @@
 					"table": "securities"
 				}
 			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/AzureNSEDB')]"
-			]
+			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/seclist')]",
@@ -424,88 +391,6 @@
 					}
 				]
 			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/nsestorage')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/secstage')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "AzureNSEDB",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "AzureSqlTable",
-				"schema": [
-					{
-						"name": "id",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "symbol",
-						"type": "varchar"
-					},
-					{
-						"name": "series",
-						"type": "varchar"
-					},
-					{
-						"name": "security_name",
-						"type": "varchar"
-					},
-					{
-						"name": "Band",
-						"type": "int",
-						"precision": 10
-					},
-					{
-						"name": "Remarks",
-						"type": "varchar"
-					},
-					{
-						"name": "update_time",
-						"type": "datetime",
-						"precision": 23,
-						"scale": 3
-					}
-				],
-				"typeProperties": {
-					"schema": "dbo",
-					"table": "securities_stage"
-				}
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/AzureNSEDB')]"
-			]
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/AzureNSEDB')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureSqlDatabase",
-				"typeProperties": {
-					"connectionString": "[parameters('AzureNSEDB_connectionString')]"
-				}
-			},
-			"dependsOn": []
-		},
-		{
-			"name": "[concat(parameters('factoryName'), '/nsestorage')]",
-			"type": "Microsoft.DataFactory/factories/linkedServices",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"annotations": [],
-				"type": "AzureBlobStorage",
-				"typeProperties": {
-					"connectionString": "[parameters('nsestorage_connectionString')]"
-				}
-			},
 			"dependsOn": []
 		},
 		{
@@ -555,7 +440,6 @@
 				}
 			},
 			"dependsOn": [
-				"[concat(variables('factoryId'), '/datasets/secstage')]",
 				"[concat(variables('factoryId'), '/datasets/SecTable')]"
 			]
 		},
@@ -585,9 +469,7 @@
 				},
 				"schema": []
 			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/nsestorage')]"
-			]
+			"dependsOn": []
 		},
 		{
 			"name": "[concat(parameters('factoryName'), '/new_sec_file_added')]",
@@ -595,7 +477,7 @@
 			"apiVersion": "2018-06-01",
 			"properties": {
 				"annotations": [],
-				"runtimeState": "Stopped",
+				"runtimeState": "Started",
 				"pipelines": [
 					{
 						"pipelineReference": {
@@ -603,7 +485,7 @@
 							"type": "PipelineReference"
 						},
 						"parameters": {
-							"secfilename": "[parameters('new_sec_file_added_properties_populate_secs_parameters_secfilename')]"
+							"secfilename": "@triggerBody().fileName"
 						}
 					}
 				],
@@ -611,7 +493,7 @@
 				"typeProperties": {
 					"blobPathBeginsWith": "/input/blobs/'sec'",
 					"ignoreEmptyBlobs": true,
-					"scope": "[parameters('new_sec_file_added_properties_typeProperties_scope')]",
+					"scope": "/subscriptions/7d62fa9c-ddf9-43b0-bde2-32606723987c/resourceGroups/StockGroup/providers/Microsoft.Storage/storageAccounts/stockmarketfiles",
 					"events": [
 						"Microsoft.Storage.BlobCreated"
 					]
