@@ -5,12 +5,20 @@
 			"referenceName": "nsestorage",
 			"type": "LinkedServiceReference"
 		},
+		"parameters": {
+			"secfilename": {
+				"type": "string"
+			}
+		},
 		"annotations": [],
 		"type": "DelimitedText",
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"fileName": "nse sec_list.csv",
+				"fileName": {
+					"value": "@dataset().secfilename",
+					"type": "Expression"
+				},
 				"container": "input"
 			},
 			"columnDelimiter": ",",

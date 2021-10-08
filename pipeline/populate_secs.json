@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "copy to stage",
+				"name": "load_sec_data_stage",
 				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
@@ -104,7 +104,10 @@
 				"inputs": [
 					{
 						"referenceName": "seclist",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"secfilename": "sec_list.csv"
+						}
 					}
 				],
 				"outputs": [
@@ -115,11 +118,11 @@
 				]
 			},
 			{
-				"name": "populatesecs",
+				"name": "load_sec_to_main",
 				"type": "ExecuteDataFlow",
 				"dependsOn": [
 					{
-						"activity": "copy to stage",
+						"activity": "load_sec_data_stage",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -144,6 +147,74 @@
 					},
 					"traceLevel": "Fine"
 				}
+			},
+			{
+				"name": "move_sec_file",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "load_sec_to_main",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "7.00:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "DelimitedTextSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "DelimitedTextWriteSettings",
+							"quoteAllText": true,
+							"fileExtension": ".txt"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "seclist",
+						"type": "DatasetReference",
+						"parameters": {
+							"secfilename": "sec_list.csv"
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "secoutfile",
+						"type": "DatasetReference"
+					}
+				]
 			}
 		],
 		"annotations": []
